@@ -70,7 +70,7 @@
   },
   "homepage": "https://github.com/shgysk8zer0/npm-template#readme",
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-node-resolve": "^16.0.0",
     "@shgysk8zer0/eslint-config": "^1.0.3",
     "@shgysk8zer0/js-utils": "^1.0.2",
     "@shgysk8zer0/npm-utils": "^1.1.3"
