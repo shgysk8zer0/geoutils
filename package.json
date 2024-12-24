@@ -1,6 +1,6 @@
 {
   "name": "@shgysk8zer0/geoutils",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Geo utils library for JavaScript ",
   "keywords": [
     "geo",
@@ -80,6 +80,7 @@
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@shgysk8zer0/eslint-config": "^1.0.3",
     "@shgysk8zer0/js-utils": "^1.0.2",
-    "@shgysk8zer0/npm-utils": "^1.1.3"
+    "@shgysk8zer0/npm-utils": "^1.1.3",
+    "@shgysk8zer0/polyfills": "^0.4.8"
   }
 }

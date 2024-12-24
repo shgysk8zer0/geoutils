@@ -1,7 +1,6 @@
-const EARTH_RADIUS_METERS = 6371e3;
+const EARTH_RADIUS_METERS = 6371000;
 const RADIANS_PER_DEGREE = Math.PI / 180;
-// const EARTH_CIRCUMFERENCE_METERS = 40075017;
-// const LATITUDE_DEGREES_TO_METERS = EARTH_CIRCUMFERENCE_METERS / 360;
+const METERS_PER_DEGREE = 111321;
 const BASE32_ALPHABET = '0123456789bcdefghjkmnpqrstuvwxyz';
 const BASE32_TABLE = Object.fromEntries(BASE32_ALPHABET.split('').map((char, idx) => [char, idx]));
 
@@ -114,7 +113,7 @@ export function getDistance(
  * @returns {number} The distance between the two geohashes in meters.
  */
 export function getGeohashDistance(geohash1, geohash2, { highAccuracy = false } = {}) {
-	return getDistance(decodeGeohash(geohash1), decodeGeohash(geohash2), { highAccuracy});
+	return getDistance(decodeGeohash(geohash1), decodeGeohash(geohash2), { highAccuracy });
 }
 
 /**
@@ -145,10 +144,10 @@ export function checkLocation(
  * @param {object} location - The location object.
  * @param {number} location.latitude - The latitude.
  * @param {number} location.longitude - The longitude.
- * @param {number} [precision=4] - The desired geohash precision (length).
+ * @param {number} [accuracy=4] - The desired geohash precision (length).
  * @returns {string} The geohash string.
  */
-export function encodeGeohash({ latitude, longitude }, precision = 4) {
+export function encodeGeohash({ latitude, longitude }, accuracy = 4) {
 	let idx = 0;
 	let bit = 0;
 	let evenBit = true;
@@ -160,7 +159,7 @@ export function encodeGeohash({ latitude, longitude }, precision = 4) {
 	let lonMax = 180;
 
 	// Here be dragons again
-	while (geohash.length < precision) {
+	while (geohash.length < accuracy) {
 		if (evenBit) {
 			const lonMid = (lonMin + lonMax) / 2;
 
@@ -249,11 +248,91 @@ export function checkGeohash(geohash, coords, { highAccuracy = false, radius = 1
  *
  * @param {string} geohash The geohash to estimate accuracy for.
  * @returns {number} The estimated accuracy in meters.
+ * @see https://gis.stackexchange.com/questions/115280/what-is-the-precision-of-geohash
  */
 export function estimateGeohashAccuracy(geohash) {
-	return geohash.length > 10
-		? (12000 / Math.pow(2, geohash.length)) * 0.8
-		: 12000 / Math.pow(2, geohash.length);
+	if (typeof geohash !== 'string') {
+		return NaN;
+	} else {
+		switch(geohash.length) {
+			case 0: return Infinity;
+			case 1: return 25_000_000;
+			case 2: return 630_000;
+			case 3: return 78_000;
+			case 4: return 20_000;
+			case 5: return 2_400;
+			case 6: return 610;
+			case 7: return 76;
+			case 8: return 19;
+			case 9: return 2.4;
+			case 10: return 0.6;
+			case 11: return 0.0074;
+			default: return 0;
+		}
+	}
+}
+
+/**
+ * Get the accuracy/hash length to derive length of a geohash given meters
+ *
+ * @param {number} meters The meters to which you want the hash accurate.
+ * @returns {number} [1-12] depending on the accuracy in meters given, or `NaN` if there was an error
+ */
+export function calculateGeohashLength(distanceInMeters) {
+	if (typeof distanceInMeters !== 'number' || isNaN(distanceInMeters) || distanceInMeters < 0) {
+		return NaN;
+	} else if (distanceInMeters === Infinity) {
+		return 0;
+	} else if (distanceInMeters > 24_999_999) {
+		return 1;
+	} else if (distanceInMeters > 629_999) {
+		return 2;
+	} else if (distanceInMeters > 77_999) {
+		return 3;
+	} else if (distanceInMeters > 19_999) {
+		return 4;
+	} else if (distanceInMeters > 2_399) {
+		return 5;
+	} else if (distanceInMeters > 609) {
+		return 6;
+	} else if (distanceInMeters > 75) {
+		return 7;
+	} else if (distanceInMeters > 18) {
+		return 8;
+	} else if (distanceInMeters > 2.3) {
+		return 9;
+	} else if (distanceInMeters > 0.5) {
+		return 10;
+	} else if (distanceInMeters > 0.0073) {
+		return 11;
+	} else {
+		return 12;
+	}
+}
+
+/**
+ * Estimates the accuracy of geo coordinates based on latitude correction and decimal length;
+ *
+ * @param {GeolocationCoordinates} coords
+ * @param {number} coords.longitude The longitude value of the coordinates
+ * @returns {number} The estimated precision of the cooordinates in meters
+ * @see https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude
+ * @see https://xkcd.com/2170/
+ */
+export function estimateCoordinateAccuracy({ latitude, accuracy }) {
+	if (typeof accuracy === 'number') {
+		return accuracy;
+	} if (typeof latitude !== 'number') {
+		return estimateCoordinateAccuracy({ latitude: parseFloat(latitude) });
+	} else if (Number.isNaN(latitude)) {
+		return NaN;
+	} else if (Number.isInteger(latitude)) {
+		return METERS_PER_DEGREE * Math.cos(latitude * RADIANS_PER_DEGREE);
+	} else {
+		const longStr = latitude.toString();
+		const decimalLength = longStr.length - longStr.indexOf('.') - 1;
+		return METERS_PER_DEGREE * Math.cos(latitude * RADIANS_PER_DEGREE) / Math.pow(10, decimalLength);
+	}
 }
 
 /**
@@ -266,3 +345,37 @@ export const geohashToBytes = geohash => Uint8Array.from(
 	geohash.split(''),
 	char => BASE32_ALPHABET.indexOf(char)
 );
+
+/**
+ * Gets the current position of the user, asynchronously.
+ *
+ * @param {object} options - Options for the geolocation request.
+ * @param {boolean} [options.enableHighAccuracy=false] - Whether to request high accuracy.
+ * @param {number} [options.maximumAge=0] - The maximum age of a cached position.
+ * @param {number} [options.timeout=Infinity] - The maximum time to wait for a position.
+ * @returns {Promise<GeolocationPosition>} - A Promise that resolves with the geolocation position.
+ * @throws {GeolocationPositionError} - If an error occurs during geolocation.
+ */
+export async function getCurrentPosition({ enableHighAccuracy = false, maximumAge = 0, timeout = Infinity } = {}) {
+	const { resolve, reject, promise } = Promise.withResolvers();
+	navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy, maximumAge, timeout });
+
+	return promise;
+}
+
+/**
+ * Gets the current position of the user as a geohash.
+ *
+ * @param {object} options - Options for the geolocation request.
+ * @param {boolean} [options.enableHighAccuracy=false] - Whether to request high accuracy.
+ * @param {number} [options.maximumAge=0] - The maximum age of a cached position.
+ * @param {number} [options.timeout=Infinity] - The maximum time to wait for a position.
+ * @returns {Promise<string>} - The geohash of the user's current position.
+ * @throws {GeolocationPositionError} - If an error occurs during geolocation.
+ */
+export async function getCurrentPositionHash({ enableHighAccuracy = false, maximumAge = 0, timeout = Infinity } = {}) {
+	const position = await getCurrentPosition({ enableHighAccuracy, maximumAge, timeout });
+	const accuracy = calculateGeohashLength(position.coords.accuracy);
+
+	return encodeGeohash(position.coords, accuracy);
+}

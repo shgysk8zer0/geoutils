@@ -1,3 +1,3 @@
-import { node } from '@shgysk8zer0/eslint-config';
+import { browser } from '@shgysk8zer0/eslint-config';
 
-export default node({ files: ['**/*.js'], ignores: ['**/*.min.js', '**/*.cjs', '**/*.mjs'] });
+export default browser({ files: ['**/*.js'], ignores: ['**/*.min.js', '**/*.cjs', '**/*.mjs'] });

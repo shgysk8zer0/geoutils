@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.1] - 2024-12-23
+
+### Added
+- Add new methods for various accuracy/length estimations
+- Add functions utilizing the GeoLocation API in browsers
+
+### Fixed
+- Fix estimating the accuracy of a given geohash using known values
+
 ## [v1.0.0] - 2024-12-19
 
 Initial Release
