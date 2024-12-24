@@ -1,6 +1,11 @@
+import '@shgysk8zer0/polyfills';
 import { describe, test } from 'node:test';
 import assert from 'node:assert';
-import { encodeGeohash, decodeGeohash, getDistance, getGeohashDistance, estimateGeohashAccuracy, checkGeohash, getGeohashBounds, geohashToBytes } from './geoutils.js';
+import {
+	encodeGeohash, decodeGeohash, getDistance, getGeohashDistance, estimateGeohashAccuracy, checkGeohash,
+	getGeohashBounds, geohashToBytes, estimateCoordinateAccuracy, calculateGeohashLength,
+	getCurrentPositionHash,
+} from './geoutils.js';
 
 describe('GeoUtils Tests', () => {
 	test('Check known geohash values', () => {
@@ -56,11 +61,18 @@ describe('GeoUtils Tests', () => {
 	});
 
 	test('Check geohash accuracy estimation', () => {
-		const accuracy = estimateGeohashAccuracy('u4pruydqqvj');
+		const accuracy = estimateGeohashAccuracy('u4pruydq');
 
 		assert.strictEqual(typeof accuracy, 'number', 'Accuracy should be a number');
-		assert.strictEqual(accuracy, 4.6875, 'Accuracy should match known value');
-		assert.strictEqual(estimateGeohashAccuracy('u4pruydqqv'), 11.71875, 'Accuracy should match known value');
+		assert.strictEqual(accuracy, 19, 'Accuracy should match known value');
+		assert.strictEqual(estimateGeohashAccuracy('u4pruydqqv'), 0.6, 'Accuracy should match known value');
+	});
+
+	test('Check geocoordiante accuracy estimation', () => {
+		const coords = { latitude: 57.64911, longitude: 10.40744 };
+		const accuracy = estimateCoordinateAccuracy(coords);
+		assert.strictEqual(typeof accuracy, 'number', 'Accuracy should be a number.');
+		assert.strictEqual(accuracy.toFixed(0), '1', '5 digits should be accurate to about a meter.');
 	});
 
 	test('Check geohash bounds', () => {
@@ -86,5 +98,36 @@ describe('GeoUtils Tests', () => {
 		assert.ok(bytes instanceof Uint8Array, 'Bytes should be an array');
 		assert.strictEqual(bytes.length, expected.length, 'Bytes should be 11 bytes long');
 		assert.deepStrictEqual(bytes, expected, 'Bytes should match known value');
+	});
+
+	test('Geohash generation accuracy should be what is expected.', () => {
+		const fullHash = encodeGeohash({ latitude: 57.64911, loongitude: 10.40744 }, 12);
+
+		for (let n = 1; n < 12; n++) {
+			const hash = fullHash.substring(0, n);
+			const accuracy = estimateGeohashAccuracy(hash);
+			const length = calculateGeohashLength(accuracy);
+			assert.strictEqual(length, n, `Estimated accuracy for a hash length should match [${hash}]`);
+		}
+	});
+
+	test('Check geohash generation from the `navigator.geolocation` (mocked) API.', async () => {
+		globalThis.navigator = {
+			geolocation: {
+				getCurrentPosition(success) {
+					success({
+						coords: {
+							latitude: 57.64911,
+							longitude: 10.40744,
+							accuracy: 0.0074 // Should result in geohash length of 11
+						},
+						timestamp: Date.now()
+					});
+				}
+			}
+		};
+
+		const hash = await getCurrentPositionHash();
+		assert.strictEqual(hash, 'u4pruydqqvj', 'Hash should match expected value.');
 	});
 });
