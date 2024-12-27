@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.2] - 2-24-12-26
+
+### Added
+- Add `geo:` URI utility functions
+
 ## [v1.0.1] - 2024-12-23
 
 ### Added
