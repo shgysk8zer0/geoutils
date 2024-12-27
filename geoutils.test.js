@@ -4,10 +4,31 @@ import assert from 'node:assert';
 import {
 	encodeGeohash, decodeGeohash, getDistance, getGeohashDistance, estimateGeohashAccuracy, checkGeohash,
 	getGeohashBounds, geohashToBytes, estimateCoordinateAccuracy, calculateGeohashLength,
-	getCurrentPositionHash,
+	getCurrentPositionHash, parseGeoURI, createGeoURI,
 } from './geoutils.js';
 
 describe('GeoUtils Tests', () => {
+	/**
+	 * @type {GeolocationCoordinates}
+	 */
+	const geoCoords = {
+		latitude: 57.64911,
+		longitude: 10.40744,
+		altitude: 42,
+		accuracy: 0.0074, // Should result in geohash length of 11
+		altitudeAccuracy: null,
+		heading: null,
+		speed: null,
+	};
+
+	globalThis.navigator = {
+		geolocation: {
+			async getCurrentPosition(success, fail) {
+				return await Promise.try(() => success({ coords: geoCoords, timestamp: Date.now()})).catch(fail);
+			}
+		}
+	};
+
 	test('Check known geohash values', () => {
 		const decoded = decodeGeohash('u4pruydqqvj'); //57.64911,10.40744
 
@@ -112,22 +133,16 @@ describe('GeoUtils Tests', () => {
 	});
 
 	test('Check geohash generation from the `navigator.geolocation` (mocked) API.', async () => {
-		globalThis.navigator = {
-			geolocation: {
-				getCurrentPosition(success) {
-					success({
-						coords: {
-							latitude: 57.64911,
-							longitude: 10.40744,
-							accuracy: 0.0074 // Should result in geohash length of 11
-						},
-						timestamp: Date.now()
-					});
-				}
-			}
-		};
-
 		const hash = await getCurrentPositionHash();
 		assert.strictEqual(hash, 'u4pruydqqvj', 'Hash should match expected value.');
+	});
+
+	test('Check `geo:` URI handling', () => {
+		const params = { zoom: 7, query: 'foo', type: 'what?' };
+		const uri = createGeoURI(geoCoords, params);
+		const result = parseGeoURI(uri);
+
+		assert.deepStrictEqual(result.coords, geoCoords, 'Should parse to identical `GeolocationCoordinates`');
+		assert.deepStrictEqual(result.params, params, 'Should parse to identical params.');
 	});
 });
