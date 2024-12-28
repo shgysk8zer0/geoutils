@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.5] - 2024-12-28
+
+### Fixed
+- Also bundle everything in `geoutils.mjs` (new ESM bundle)
+
 ## [v1.0.4] - 2024-12-28
 
 ### Fixed
