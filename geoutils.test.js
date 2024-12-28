@@ -5,7 +5,7 @@ import {
 	encodeGeohash, decodeGeohash, getDistance, getGeohashDistance, estimateGeohashAccuracy, checkGeohash,
 	getGeohashBounds, geohashToBytes, estimateCoordinateAccuracy, calculateGeohashLength,
 	getCurrentPositionHash, parseGeoURI, createGeoURI,
-} from '@shgysk8zer0/geoutils';
+} from '@shgysk8zer0/geoutils/geoutils.js';
 
 describe('GeoUtils Tests', () => {
 	/**
