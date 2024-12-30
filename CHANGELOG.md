@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.6] - 2024-12-30
+
+### Fixed
+- Fix estimations of `getDistance()` with low accuracy method
+
 ## [v1.0.5] - 2024-12-28
 
 ### Fixed

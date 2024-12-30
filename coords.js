@@ -23,8 +23,11 @@ export function getDistance(
 		return NaN;
 	} else if (! highAccuracy) {
 		// Approximation using Pythagoras' theorem with latitude correction
-		const factor = 111.32 * Math.cos(((lat1 + lat2) / 2) * RADIANS_PER_DEGREE);
-		return Math.hypot((lat2 - lat1) * 111, (lon2 - lon1) * factor);
+		const latScale = Math.cos((lat1 + lat2) * RADIANS_PER_DEGREE / 2);
+		const dLon = (lon2 - lon1) * RADIANS_PER_DEGREE * latScale;
+		const dLat = (lat2 - lat1) * RADIANS_PER_DEGREE;
+
+		return EARTH_RADIUS_METERS * Math.hypot(dLon, dLat);
 	} else {
 		const lat1Rad = clamp(MIN_LAT, lat1 * RADIANS_PER_DEGREE, MAX_LAT);
 		const lat2Rad = clamp(MIN_LAT, lat2 * RADIANS_PER_DEGREE, MAX_LAT);
