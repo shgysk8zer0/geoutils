@@ -27,7 +27,8 @@ export function getDistance(
 		const dLon = (lon2 - lon1) * RADIANS_PER_DEGREE * latScale;
 		const dLat = (lat2 - lat1) * RADIANS_PER_DEGREE;
 
-		return EARTH_RADIUS_METERS * Math.hypot(dLon, dLat);
+		// Using `Math.hypot()` is less efficient than this
+		return EARTH_RADIUS_METERS * Math.sqrt(dLon * dLon + dLat * dLat);
 	} else {
 		const lat1Rad = clamp(MIN_LAT, lat1 * RADIANS_PER_DEGREE, MAX_LAT);
 		const lat2Rad = clamp(MIN_LAT, lat2 * RADIANS_PER_DEGREE, MAX_LAT);
