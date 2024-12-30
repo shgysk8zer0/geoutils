@@ -145,4 +145,26 @@ describe('GeoUtils Tests', () => {
 		assert.deepStrictEqual(result.coords, geoCoords, 'Should parse to identical `GeolocationCoordinates`');
 		assert.deepStrictEqual(result.params, params, 'Should parse to identical params.');
 	});
+
+	test('Check distance estimations', () => {
+		const EIFFEL_TOWER = { latitude: 48.8583736, longitude: 2.291901 };
+		const ARC_DE_TRIOPHE = { latitude: 48.8738286, longitude: 2.2935378 };
+		const EMPIRE_STATE = { latitude: 40.748440, longitude: -73.985664 };
+		const TOWER_BRIDGE = { latitude: 51.505456, longitude: -0.075356 };
+
+		const distances = [
+			getDistance(EIFFEL_TOWER, ARC_DE_TRIOPHE), // Low accuracy estimation of short distance
+			getDistance(EIFFEL_TOWER, ARC_DE_TRIOPHE, { highAccuracy: true }), // High accuracy ~ 1.68km as measured on Google Maps
+			1_730, // Measured linear of 1.73km distance, according to Google Maps => 1,730 meters
+			getDistance(EMPIRE_STATE, TOWER_BRIDGE), // Greater distance, low accuracy
+			getDistance(EMPIRE_STATE, TOWER_BRIDGE, { highAccuracy: true }), // High accuracy - 3,459 miles, ~ 5,567km => 5,566,721 meters
+			5_566_721, // 3,459 miles, ~ 5,567km
+		];
+
+		// Short distances likely affected by measurement errors and rounding issues. Uncertainty of 2.5 meters significantly affects results.
+		assert.ok(Math.abs(distances[0] - distances[2]) / distances[2] < 0.005, 'Simple approximations at close distances should be < 0.5%.');
+		assert.ok(Math.abs(distances[1] - distances[2]) / distances[2] < 0.005, 'Haversine approximations at close distances should be < 0.5%.');
+		assert.ok(Math.abs(distances[3] - distances[5]) / distances[5] < 0.05, 'Larger distances should still be within 5%.');
+		assert.ok(Math.abs(distances[4] - distances[5]) / distances[5] < 0.001, 'Large distance using Haversine formula should be < 0.1% error.');
+	});
 });
